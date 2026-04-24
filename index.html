@@ -75,18 +75,15 @@
     </div>
   </div>
 
-  <!-- 견종 정보 카드 (정답 시 슬라이드업) -->
+  <!-- 견종 정보 카드 (정답/오답 모두 표시) -->
   <div id="breed-info-sheet" class="breed-info-sheet">
     <div class="breed-info-content">
       <div class="breed-info-header">
-        <span class="correct-badge">✅ 정답!</span>
+        <span id="info-badge" class="info-badge"></span>
         <h3 id="info-breed-name"></h3>
         <p id="info-breed-en"></p>
       </div>
       <p id="info-description" class="info-description"></p>
-      <div class="info-progress-bar-wrap">
-        <div id="info-progress-bar" class="info-progress-bar"></div>
-      </div>
       <button id="info-next-btn" class="btn-next">다음 문제 →</button>
     </div>
   </div>

@@ -224,8 +224,8 @@ h1 {
 /* ── Dog Photo ───────────────────────────── */
 .photo-container {
   width: calc(100% - 2.5rem);
-  aspect-ratio: 4 / 3;
-  max-height: 290px;
+  /* clamp: 세로 모드 충분히, 가로 모드 작게 */
+  height: clamp(140px, 38vh, 270px);
   border-radius: 18px;
   overflow: hidden;
   background: #F0F0F0;
@@ -236,6 +236,29 @@ h1 {
   box-shadow: 0 6px 24px rgba(0,0,0,0.10);
   position: relative;
   flex-shrink: 0;
+  transition: box-shadow 0.3s ease;
+}
+
+/* 정답 시 초록 글로우 */
+.photo-container.glow-correct {
+  animation: photo-glow-correct 0.7s ease forwards;
+}
+
+/* 오답 시 빨간 글로우 */
+.photo-container.glow-wrong {
+  animation: photo-glow-wrong 0.7s ease forwards;
+}
+
+@keyframes photo-glow-correct {
+  0%   { box-shadow: 0 6px 24px rgba(0,0,0,0.10); }
+  40%  { box-shadow: 0 0 0 6px rgba(107,203,119,0.55), 0 6px 24px rgba(0,0,0,0.10); }
+  100% { box-shadow: 0 6px 24px rgba(0,0,0,0.10); }
+}
+
+@keyframes photo-glow-wrong {
+  0%   { box-shadow: 0 6px 24px rgba(0,0,0,0.10); }
+  40%  { box-shadow: 0 0 0 6px rgba(255,71,87,0.45), 0 6px 24px rgba(0,0,0,0.10); }
+  100% { box-shadow: 0 6px 24px rgba(0,0,0,0.10); }
 }
 
 #dog-photo {
@@ -243,7 +266,8 @@ h1 {
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  /* contain: 강아지 전체가 잘리지 않고 보임 */
+  object-fit: contain;
   opacity: 0;
   transition: opacity 0.3s ease;
 }
@@ -326,29 +350,31 @@ h1 {
   background: var(--color-success);
   border-color: var(--color-success);
   color: white;
-  animation: pop-correct 0.4s ease;
+  animation: pop-correct 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .btn-answer.wrong {
   background: var(--color-error);
   border-color: var(--color-error);
   color: white;
-  animation: shake-wrong 0.4s ease;
+  animation: shake-wrong 0.45s ease;
 }
 
 @keyframes pop-correct {
   0%   { transform: scale(1); }
-  40%  { transform: scale(1.08); }
-  70%  { transform: scale(0.97); }
+  45%  { transform: scale(1.12); }
+  70%  { transform: scale(0.96); }
+  85%  { transform: scale(1.05); }
   100% { transform: scale(1); }
 }
 
 @keyframes shake-wrong {
-  0%, 100% { transform: translateX(0); }
-  20%      { transform: translateX(-5px); }
-  40%      { transform: translateX(5px); }
-  60%      { transform: translateX(-3px); }
-  80%      { transform: translateX(3px); }
+  0%, 100% { transform: translateX(0) rotate(0); }
+  18%      { transform: translateX(-8px) rotate(-1.5deg); }
+  36%      { transform: translateX(8px)  rotate(1.5deg); }
+  54%      { transform: translateX(-5px) rotate(-0.8deg); }
+  72%      { transform: translateX(5px)  rotate(0.8deg); }
+  88%      { transform: translateX(-2px); }
 }
 
 /* ── Breed Info Bottom Sheet ─────────────── */
@@ -359,7 +385,7 @@ h1 {
   right: 0;
   z-index: 300;
   transform: translateY(100%);
-  transition: transform 0.45s cubic-bezier(0.34, 1.3, 0.64, 1);
+  transition: transform 0.42s cubic-bezier(0.34, 1.2, 0.64, 1);
 }
 
 .breed-info-sheet.visible {
@@ -369,74 +395,54 @@ h1 {
 .breed-info-content {
   background: white;
   border-radius: 24px 24px 0 0;
-  padding: 1.5rem 1.5rem 2rem;
+  padding: 1.4rem 1.5rem 2rem;
   max-width: 500px;
   margin: 0 auto;
-  box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.14);
+  box-shadow: 0 -8px 40px rgba(0,0,0,0.13);
 }
 
 .breed-info-header {
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.7rem;
 }
 
-.correct-badge {
+/* 배지 공통 */
+.info-badge {
   display: inline-block;
-  background: var(--color-success);
-  color: white;
   font-size: 0.78rem;
   font-weight: 700;
   padding: 4px 12px;
   border-radius: 99px;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.45rem;
 }
 
+.info-badge.correct  { background: var(--color-success); color: white; }
+.info-badge.wrong    { background: var(--color-error);   color: white; }
+.info-badge.timeout  { background: #FF8C00;              color: white; }
+
 .breed-info-header h3 {
-  font-size: 1.4rem;
+  font-size: 1.35rem;
   font-weight: 900;
   color: var(--color-text);
   margin-bottom: 0.15rem;
 }
 
 .breed-info-header p {
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   color: var(--color-text-light);
 }
 
 .info-description {
   font-size: 0.95rem;
-  line-height: 1.7;
+  line-height: 1.75;
   color: var(--color-text);
   margin-bottom: 1.1rem;
   word-break: keep-all;
 }
 
-/* Auto-advance progress bar */
-.info-progress-bar-wrap {
-  height: 4px;
-  background: #EEE;
-  border-radius: 99px;
-  overflow: hidden;
-  margin-bottom: 1rem;
-}
-
-.info-progress-bar {
-  height: 100%;
-  width: 100%;
-  background: var(--color-success);
-  border-radius: 99px;
-  transform-origin: left;
-  transition: none;
-}
-
-.info-progress-bar.shrinking {
-  transition: width 3.5s linear;
-  width: 0%;
-}
-
 /* Next button */
 .btn-next {
   width: 100%;
-  padding: 0.85rem;
+  padding: 0.88rem;
   border-radius: 14px;
   font-family: inherit;
   font-size: 1rem;
@@ -445,7 +451,7 @@ h1 {
   color: white;
   border: none;
   cursor: pointer;
-  box-shadow: 0 4px 16px rgba(255, 107, 107, 0.3);
+  box-shadow: 0 4px 16px rgba(255,107,107,0.3);
   transition: transform 0.12s, box-shadow 0.12s;
   -webkit-tap-highlight-color: transparent;
 }
@@ -461,7 +467,7 @@ h1 {
   text-align: center;
   max-width: 400px;
   width: 100%;
-  box-shadow: 0 12px 40px rgba(255, 107, 107, 0.15);
+  box-shadow: 0 12px 40px rgba(255,107,107,0.15);
 }
 
 .end-grade-emoji {
@@ -499,13 +505,18 @@ h1 {
   line-height: 1.6;
 }
 
-/* ── Responsive ──────────────────────────── */
+/* ── Responsive: 세로 소형 ────────────────── */
 @media (max-width: 380px) {
-  .btn-answer      { font-size: 0.8rem; min-height: 60px; }
-  .photo-container { max-height: 240px; }
+  .btn-answer { font-size: 0.8rem; min-height: 60px; }
 }
 
-@media (max-height: 700px) {
-  .photo-container { max-height: 200px; }
-  .quiz-container  { padding: 0.5rem 0 1rem; }
+/* ── Responsive: 가로 모드 ────────────────── */
+@media (orientation: landscape) and (max-height: 520px) {
+  .quiz-container  { padding: 0.3rem 0 0.5rem; }
+  .quiz-header     { padding: 0.35rem 1.25rem 0.2rem; }
+  .timer-label     { margin-bottom: 0.35rem; }
+  .photo-container { height: clamp(110px, 30vh, 150px); }
+  .question-text   { font-size: 0.9rem; margin-bottom: 0.4rem; }
+  .answer-grid     { gap: 8px; }
+  .btn-answer      { min-height: 52px; padding: 0.55rem; font-size: 0.83rem; }
 }

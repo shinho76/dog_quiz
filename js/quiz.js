@@ -1,8 +1,7 @@
 'use strict';
 
-const TOTAL_QUESTIONS  = 10;
-const TIMER_SECONDS    = 15;
-const INFO_DURATION_MS = 3500;
+const TOTAL_QUESTIONS = 10;
+const TIMER_SECONDS   = 15;
 
 const state = {
   questions:     [],
@@ -66,14 +65,117 @@ function stopTimer() {
 }
 
 function renderTimer() {
-  const pct    = (state.timeLeft / TIMER_SECONDS) * 100;
-  const bar    = $('timer-bar');
-  const label  = document.querySelector('.timer-label');
-  bar.style.width           = pct + '%';
+  const pct   = (state.timeLeft / TIMER_SECONDS) * 100;
+  const bar   = $('timer-bar');
+  const label = document.querySelector('.timer-label');
+  bar.style.width              = pct + '%';
   $('timer-count').textContent = state.timeLeft;
   const urgent = state.timeLeft <= 5;
   bar.classList.toggle('urgent', urgent);
   label.classList.toggle('urgent', urgent);
+}
+
+// ── Web Audio 음향 ────────────────────────
+let audioCtx = null;
+
+function getAudio() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+
+function beep(freq, startTime, duration, vol = 0.22, type = 'sine') {
+  try {
+    const ctx  = getAudio();
+    const osc  = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, startTime);
+    gain.gain.setValueAtTime(vol, startTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+    osc.start(startTime);
+    osc.stop(startTime + duration + 0.02);
+  } catch (_) {}
+}
+
+function playCorrect() {
+  try {
+    const ctx = getAudio();
+    const t   = ctx.currentTime;
+    beep(523, t,        0.18, 0.22);          // C5
+    beep(659, t + 0.11, 0.18, 0.22);          // E5
+    beep(784, t + 0.22, 0.30, 0.26);          // G5
+  } catch (_) {}
+}
+
+function playWrong() {
+  try {
+    const ctx = getAudio();
+    const t   = ctx.currentTime;
+    beep(311, t,        0.16, 0.20, 'triangle'); // Eb4
+    beep(233, t + 0.13, 0.24, 0.18, 'triangle'); // Bb3
+  } catch (_) {}
+}
+
+// ── 폭죽 confetti ─────────────────────────
+function launchConfetti() {
+  const canvas = $('confetti-canvas');
+  const ctx    = canvas.getContext('2d');
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+  canvas.style.display = 'block';
+
+  const COLORS = ['#FF6B6B','#FFD93D','#6BCB77','#4ECDC4','#FF85A1','#A8D8EA','#FFB347','#B39DDB'];
+  const particles = Array.from({ length: 150 }, () => ({
+    x:    Math.random() * canvas.width,
+    y:    -Math.random() * canvas.height * 0.5,
+    w:    Math.random() * 13 + 6,
+    h:    Math.random() * 7  + 4,
+    color: COLORS[Math.floor(Math.random() * COLORS.length)],
+    rot:  Math.random() * 360,
+    rotV: (Math.random() - 0.5) * 9,
+    vy:   Math.random() * 3.5 + 2,
+    vx:   (Math.random() - 0.5) * 2.5,
+    opacity: 1,
+  }));
+
+  const start = Date.now();
+  let raf;
+  (function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const elapsed = Date.now() - start;
+    let alive = false;
+    for (const p of particles) {
+      p.y += p.vy; p.x += p.vx; p.rot += p.rotV;
+      if (elapsed > 1800) p.opacity -= 0.022;
+      if (p.opacity <= 0) continue;
+      alive = true;
+      ctx.save();
+      ctx.globalAlpha = p.opacity;
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot * Math.PI / 180);
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      if (p.w > 14) { ctx.arc(0, 0, p.h / 2, 0, Math.PI * 2); }
+      else          { ctx.rect(-p.w / 2, -p.h / 2, p.w, p.h); }
+      ctx.fill();
+      ctx.restore();
+    }
+    if (alive && elapsed < 3200) { raf = requestAnimationFrame(draw); }
+    else { canvas.style.display = 'none'; cancelAnimationFrame(raf); }
+  })();
+}
+
+// ── 사진 글로우 ───────────────────────────
+function glowPhoto(type) {
+  const container = document.querySelector('.photo-container');
+  container.classList.remove('glow-correct', 'glow-wrong');
+  void container.offsetWidth; // reflow to restart animation
+  container.classList.add(type === 'correct' ? 'glow-correct' : 'glow-wrong');
 }
 
 // ── Image fetching ────────────────────────
@@ -105,14 +207,9 @@ function fetchImage(breed) {
     .catch(() => fetchDogCeoImage(breed.apiPath));
 }
 
-// ── Photo display ─────────────────────────
 function showImage(src) {
   const img = $('dog-photo');
-  img.onload = () => {
-    $('loading-spinner').classList.add('hidden');
-    img.classList.add('loaded');
-    enableButtons();
-  };
+  img.onload  = () => { $('loading-spinner').classList.add('hidden'); img.classList.add('loaded'); enableButtons(); };
   img.onerror = showFallback;
   img.src = src;
 }
@@ -128,119 +225,40 @@ function resetPhoto() {
   const img = $('dog-photo');
   img.src = '';
   img.classList.remove('loaded');
+  document.querySelector('.photo-container').classList.remove('glow-correct', 'glow-wrong');
   $('loading-spinner').classList.remove('hidden');
   $('photo-fallback').classList.remove('visible');
 }
 
 // ── Buttons ───────────────────────────────
-function enableButtons() {
-  document.querySelectorAll('.btn-answer').forEach(b => { b.disabled = false; });
-}
+function enableButtons()  { document.querySelectorAll('.btn-answer').forEach(b => { b.disabled = false; }); }
+function disableButtons() { document.querySelectorAll('.btn-answer').forEach(b => { b.disabled = true;  }); }
 
-function disableButtons() {
-  document.querySelectorAll('.btn-answer').forEach(b => { b.disabled = true; });
-}
+// ── 견종 정보 카드 ─────────────────────────
+function showBreedInfo(breed, type, onNext) {
+  const badge = $('info-badge');
+  if (type === 'correct') {
+    badge.textContent = '✅ 정답!';
+    badge.className   = 'info-badge correct';
+  } else if (type === 'timeout') {
+    badge.textContent = '⏰ 시간 초과! 정답은:';
+    badge.className   = 'info-badge timeout';
+  } else {
+    badge.textContent = '❌ 틀렸어요! 정답은:';
+    badge.className   = 'info-badge wrong';
+  }
 
-// ── Confetti 폭죽 ─────────────────────────
-function launchConfetti() {
-  const canvas = $('confetti-canvas');
-  const ctx    = canvas.getContext('2d');
-  canvas.width  = window.innerWidth;
-  canvas.height = window.innerHeight;
-  canvas.style.display = 'block';
-
-  const COLORS = ['#FF6B6B','#FFD93D','#6BCB77','#4ECDC4','#FF85A1','#A8D8EA','#FFB347','#B39DDB'];
-
-  const particles = Array.from({ length: 160 }, () => ({
-    x:    Math.random() * canvas.width,
-    y:    -Math.random() * canvas.height * 0.5,
-    w:    Math.random() * 13 + 6,
-    h:    Math.random() * 7 + 4,
-    color: COLORS[Math.floor(Math.random() * COLORS.length)],
-    rot:  Math.random() * 360,
-    rotV: (Math.random() - 0.5) * 9,
-    vy:   Math.random() * 3.5 + 2,
-    vx:   (Math.random() - 0.5) * 2.5,
-    opacity: 1,
-  }));
-
-  const start = Date.now();
-  let raf;
-
-  (function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    const elapsed = Date.now() - start;
-    let alive = false;
-
-    for (const p of particles) {
-      p.y   += p.vy;
-      p.x   += p.vx;
-      p.rot += p.rotV;
-      if (elapsed > 1800) p.opacity -= 0.022;
-      if (p.opacity <= 0) continue;
-      alive = true;
-
-      ctx.save();
-      ctx.globalAlpha = p.opacity;
-      ctx.translate(p.x, p.y);
-      ctx.rotate(p.rot * Math.PI / 180);
-      ctx.fillStyle = p.color;
-      ctx.beginPath();
-      // alternate between rectangles and circles
-      if (p.w > 14) {
-        ctx.arc(0, 0, p.h / 2, 0, Math.PI * 2);
-      } else {
-        ctx.rect(-p.w / 2, -p.h / 2, p.w, p.h);
-      }
-      ctx.fill();
-      ctx.restore();
-    }
-
-    if (alive && elapsed < 3200) {
-      raf = requestAnimationFrame(draw);
-    } else {
-      canvas.style.display = 'none';
-      cancelAnimationFrame(raf);
-    }
-  })();
-}
-
-// ── Breed Info Sheet ──────────────────────
-let infoAutoTimer = null;
-
-function showBreedInfo(breed, onNext) {
-  const sheet = $('breed-info-sheet');
-  $('info-breed-name').textContent = breed.korean;
-  $('info-breed-en').textContent   = breed.english;
+  $('info-breed-name').textContent  = breed.korean;
+  $('info-breed-en').textContent    = breed.english;
   $('info-description').textContent = breed.description;
 
-  const bar = $('info-progress-bar');
-  bar.classList.remove('shrinking');
-  bar.style.width = '100%';
+  $('breed-info-sheet').classList.add('visible');
 
-  sheet.classList.add('visible');
-
-  // Start shrinking bar after a small paint delay
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      bar.classList.add('shrinking');
-    });
-  });
-
-  infoAutoTimer = setTimeout(() => {
-    hideBreedInfo();
-    onNext();
-  }, INFO_DURATION_MS);
-
+  // 버튼 클릭으로만 다음 문제 진행 (자동 진행 없음)
   $('info-next-btn').onclick = () => {
-    clearTimeout(infoAutoTimer);
-    hideBreedInfo();
+    $('breed-info-sheet').classList.remove('visible');
     onNext();
   };
-}
-
-function hideBreedInfo() {
-  $('breed-info-sheet').classList.remove('visible');
 }
 
 // ── Load a question ───────────────────────
@@ -276,31 +294,37 @@ function handleAnswer(selectedBtn) {
   stopTimer();
   disableButtons();
 
-  const btns  = document.querySelectorAll('.btn-answer');
-  const ci    = state.correctIndex;
-  const breed = state.questions[state.currentIndex];
+  const btns         = document.querySelectorAll('.btn-answer');
+  const ci           = state.correctIndex;
+  const correctBreed = state.questions[state.currentIndex];
 
   if (selectedBtn !== null) {
     const idx = parseInt(selectedBtn.dataset.index, 10);
+
     if (idx === ci) {
-      // 정답
+      // ── 정답 ──────────────────────────────
       state.score++;
       $('score').textContent = state.score;
       btns[ci].classList.add('correct');
+      playCorrect();
+      glowPhoto('correct');
       launchConfetti();
-      setTimeout(() => showBreedInfo(breed, advance), 200);
-      return;
+      setTimeout(() => showBreedInfo(correctBreed, 'correct', advance), 300);
+
     } else {
-      // 오답
+      // ── 오답 ──────────────────────────────
       selectedBtn.classList.add('wrong');
       btns[ci].classList.add('correct');
+      playWrong();
+      glowPhoto('wrong');
+      setTimeout(() => showBreedInfo(correctBreed, 'wrong', advance), 700);
     }
-  } else {
-    // 타임오버
-    btns[ci].classList.add('correct');
-  }
 
-  setTimeout(advance, 1800);
+  } else {
+    // ── 타임오버 ───────────────────────────
+    btns[ci].classList.add('correct');
+    setTimeout(() => showBreedInfo(correctBreed, 'timeout', advance), 500);
+  }
 }
 
 // ── Advance ───────────────────────────────
@@ -333,8 +357,7 @@ function showEndScreen() {
 
 // ── Start / restart ───────────────────────
 function startQuiz() {
-  clearTimeout(infoAutoTimer);
-  hideBreedInfo();
+  $('breed-info-sheet').classList.remove('visible');
   state.currentIndex = 0;
   state.score        = 0;
   state.answered     = false;
