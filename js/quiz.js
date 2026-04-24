@@ -86,38 +86,96 @@ function getAudio() {
   return audioCtx;
 }
 
-function beep(freq, startTime, duration, vol = 0.22, type = 'sine') {
-  try {
-    const ctx  = getAudio();
-    const osc  = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.type = type;
-    osc.frequency.setValueAtTime(freq, startTime);
-    gain.gain.setValueAtTime(vol, startTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
-    osc.start(startTime);
-    osc.stop(startTime + duration + 0.02);
-  } catch (_) {}
+// 멍멍 — 짧은 주파수 스윕 두 번 (강아지 짖는 소리)
+function oneBark(ctx, t) {
+  const osc    = ctx.createOscillator();
+  const filter = ctx.createBiquadFilter();
+  const gain   = ctx.createGain();
+
+  // 노이즈 버스트 (거칠한 짖음 질감)
+  const nBuf  = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.18), ctx.sampleRate);
+  const nData = nBuf.getChannelData(0);
+  for (let i = 0; i < nData.length; i++) nData[i] = Math.random() * 2 - 1;
+  const noise      = ctx.createBufferSource();
+  noise.buffer     = nBuf;
+  const noiseGain  = ctx.createGain();
+  noiseGain.gain.setValueAtTime(0.18, t);
+  noiseGain.gain.exponentialRampToValueAtTime(0.001, t + 0.16);
+
+  // 메인 오실레이터: 높은 음 → 낮은 음 스윕
+  osc.type = 'sawtooth';
+  osc.frequency.setValueAtTime(680, t);
+  osc.frequency.exponentialRampToValueAtTime(210, t + 0.14);
+
+  // 밴드패스 필터로 개 울음 느낌 강조
+  filter.type = 'bandpass';
+  filter.frequency.setValueAtTime(700, t);
+  filter.frequency.exponentialRampToValueAtTime(280, t + 0.14);
+  filter.Q.setValueAtTime(2.5, t);
+
+  gain.gain.setValueAtTime(0.55, t);
+  gain.gain.exponentialRampToValueAtTime(0.001, t + 0.17);
+
+  osc.connect(filter);
+  noise.connect(noiseGain);
+  filter.connect(gain);
+  noiseGain.connect(gain);
+  gain.connect(ctx.destination);
+
+  osc.start(t); osc.stop(t + 0.2);
+  noise.start(t); noise.stop(t + 0.2);
 }
 
 function playCorrect() {
   try {
     const ctx = getAudio();
     const t   = ctx.currentTime;
-    beep(523, t,        0.18, 0.22);          // C5
-    beep(659, t + 0.11, 0.18, 0.22);          // E5
-    beep(784, t + 0.22, 0.30, 0.26);          // G5
+    oneBark(ctx, t);          // 멍
+    oneBark(ctx, t + 0.26);   // 멍
   } catch (_) {}
 }
 
+// 으르렁 — 낮은 주파수 + 진폭 변조로 으르렁 질감 합성
 function playWrong() {
   try {
-    const ctx = getAudio();
-    const t   = ctx.currentTime;
-    beep(311, t,        0.16, 0.20, 'triangle'); // Eb4
-    beep(233, t + 0.13, 0.24, 0.18, 'triangle'); // Bb3
+    const ctx      = getAudio();
+    const t        = ctx.currentTime;
+    const duration = 0.85;
+
+    // 저주파 캐리어 오실레이터
+    const carrier = ctx.createOscillator();
+    carrier.type  = 'sawtooth';
+    carrier.frequency.setValueAtTime(95, t);
+    carrier.frequency.linearRampToValueAtTime(72, t + duration);
+
+    // LFO: 캐리어 진폭을 ~22Hz로 변조 → 거칠고 울퉁불퉁한 으르렁 질감
+    const lfo     = ctx.createOscillator();
+    lfo.type      = 'sine';
+    lfo.frequency.setValueAtTime(22, t);
+
+    const lfoGain = ctx.createGain();
+    lfoGain.gain.setValueAtTime(0.18, t);
+
+    // 로우패스 필터: 저음역 강조
+    const filter  = ctx.createBiquadFilter();
+    filter.type   = 'lowpass';
+    filter.frequency.setValueAtTime(280, t);
+
+    // 출력 게인 (어택 + 릴리즈 엔벨로프)
+    const outGain = ctx.createGain();
+    outGain.gain.setValueAtTime(0, t);
+    outGain.gain.linearRampToValueAtTime(0.40, t + 0.08);
+    outGain.gain.setValueAtTime(0.40, t + duration - 0.18);
+    outGain.gain.exponentialRampToValueAtTime(0.001, t + duration);
+
+    lfo.connect(lfoGain);
+    lfoGain.connect(outGain.gain);   // LFO → 게인 변조
+    carrier.connect(filter);
+    filter.connect(outGain);
+    outGain.connect(ctx.destination);
+
+    carrier.start(t); carrier.stop(t + duration + 0.05);
+    lfo.start(t);     lfo.stop(t + duration + 0.05);
   } catch (_) {}
 }
 
