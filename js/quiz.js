@@ -1,7 +1,8 @@
 'use strict';
 
-const TOTAL_QUESTIONS = 10;
-const TIMER_SECONDS   = 15;
+const TOTAL_QUESTIONS  = 10;
+const TIMER_SECONDS    = 15;
+const INFO_DURATION_MS = 3500;
 
 const state = {
   questions:     [],
@@ -38,15 +39,13 @@ function shuffle(arr) {
   return a;
 }
 
-// ── Build question list ───────────────────
 function buildQuestions() {
   state.questions = shuffle(BREEDS).slice(0, TOTAL_QUESTIONS);
 }
 
-// ── Generate 4 choices ────────────────────
 function generateChoices(correctBreed) {
-  const pool  = shuffle(BREEDS.filter(b => b !== correctBreed));
-  const all   = shuffle([correctBreed, ...pool.slice(0, 3)]);
+  const pool = shuffle(BREEDS.filter(b => b !== correctBreed));
+  const all  = shuffle([correctBreed, ...pool.slice(0, 3)]);
   return { choices: all, correctIndex: all.indexOf(correctBreed) };
 }
 
@@ -67,12 +66,14 @@ function stopTimer() {
 }
 
 function renderTimer() {
-  const pct = (state.timeLeft / TIMER_SECONDS) * 100;
-  $('timer-bar').style.width    = pct + '%';
-  $('timer-count').textContent  = state.timeLeft;
+  const pct    = (state.timeLeft / TIMER_SECONDS) * 100;
+  const bar    = $('timer-bar');
+  const label  = document.querySelector('.timer-label');
+  bar.style.width           = pct + '%';
+  $('timer-count').textContent = state.timeLeft;
   const urgent = state.timeLeft <= 5;
-  $('timer-bar').classList.toggle('urgent', urgent);
-  document.querySelector('.timer-label').classList.toggle('urgent', urgent);
+  bar.classList.toggle('urgent', urgent);
+  label.classList.toggle('urgent', urgent);
 }
 
 // ── Image fetching ────────────────────────
@@ -92,9 +93,9 @@ function fetchWikiImage(wikiTitle) {
 function fetchDogCeoImage(apiPath) {
   return fetch('https://dog.ceo/api/breed/' + apiPath + '/images/random')
     .then(r => r.json())
-    .then(data => {
-      if (data.status !== 'success') throw new Error('no image');
-      return data.message;
+    .then(d => {
+      if (d.status !== 'success') throw new Error('no image');
+      return d.message;
     });
 }
 
@@ -106,11 +107,9 @@ function fetchImage(breed) {
 
 // ── Photo display ─────────────────────────
 function showImage(src) {
-  const img     = $('dog-photo');
-  const spinner = $('loading-spinner');
-
+  const img = $('dog-photo');
   img.onload = () => {
-    spinner.classList.add('hidden');
+    $('loading-spinner').classList.add('hidden');
     img.classList.add('loaded');
     enableButtons();
   };
@@ -140,6 +139,108 @@ function enableButtons() {
 
 function disableButtons() {
   document.querySelectorAll('.btn-answer').forEach(b => { b.disabled = true; });
+}
+
+// ── Confetti 폭죽 ─────────────────────────
+function launchConfetti() {
+  const canvas = $('confetti-canvas');
+  const ctx    = canvas.getContext('2d');
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+  canvas.style.display = 'block';
+
+  const COLORS = ['#FF6B6B','#FFD93D','#6BCB77','#4ECDC4','#FF85A1','#A8D8EA','#FFB347','#B39DDB'];
+
+  const particles = Array.from({ length: 160 }, () => ({
+    x:    Math.random() * canvas.width,
+    y:    -Math.random() * canvas.height * 0.5,
+    w:    Math.random() * 13 + 6,
+    h:    Math.random() * 7 + 4,
+    color: COLORS[Math.floor(Math.random() * COLORS.length)],
+    rot:  Math.random() * 360,
+    rotV: (Math.random() - 0.5) * 9,
+    vy:   Math.random() * 3.5 + 2,
+    vx:   (Math.random() - 0.5) * 2.5,
+    opacity: 1,
+  }));
+
+  const start = Date.now();
+  let raf;
+
+  (function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const elapsed = Date.now() - start;
+    let alive = false;
+
+    for (const p of particles) {
+      p.y   += p.vy;
+      p.x   += p.vx;
+      p.rot += p.rotV;
+      if (elapsed > 1800) p.opacity -= 0.022;
+      if (p.opacity <= 0) continue;
+      alive = true;
+
+      ctx.save();
+      ctx.globalAlpha = p.opacity;
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot * Math.PI / 180);
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      // alternate between rectangles and circles
+      if (p.w > 14) {
+        ctx.arc(0, 0, p.h / 2, 0, Math.PI * 2);
+      } else {
+        ctx.rect(-p.w / 2, -p.h / 2, p.w, p.h);
+      }
+      ctx.fill();
+      ctx.restore();
+    }
+
+    if (alive && elapsed < 3200) {
+      raf = requestAnimationFrame(draw);
+    } else {
+      canvas.style.display = 'none';
+      cancelAnimationFrame(raf);
+    }
+  })();
+}
+
+// ── Breed Info Sheet ──────────────────────
+let infoAutoTimer = null;
+
+function showBreedInfo(breed, onNext) {
+  const sheet = $('breed-info-sheet');
+  $('info-breed-name').textContent = breed.korean;
+  $('info-breed-en').textContent   = breed.english;
+  $('info-description').textContent = breed.description;
+
+  const bar = $('info-progress-bar');
+  bar.classList.remove('shrinking');
+  bar.style.width = '100%';
+
+  sheet.classList.add('visible');
+
+  // Start shrinking bar after a small paint delay
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      bar.classList.add('shrinking');
+    });
+  });
+
+  infoAutoTimer = setTimeout(() => {
+    hideBreedInfo();
+    onNext();
+  }, INFO_DURATION_MS);
+
+  $('info-next-btn').onclick = () => {
+    clearTimeout(infoAutoTimer);
+    hideBreedInfo();
+    onNext();
+  };
+}
+
+function hideBreedInfo() {
+  $('breed-info-sheet').classList.remove('visible');
 }
 
 // ── Load a question ───────────────────────
@@ -175,24 +276,31 @@ function handleAnswer(selectedBtn) {
   stopTimer();
   disableButtons();
 
-  const btns = document.querySelectorAll('.btn-answer');
-  const ci   = state.correctIndex;
+  const btns  = document.querySelectorAll('.btn-answer');
+  const ci    = state.correctIndex;
+  const breed = state.questions[state.currentIndex];
 
   if (selectedBtn !== null) {
     const idx = parseInt(selectedBtn.dataset.index, 10);
     if (idx === ci) {
+      // 정답
       state.score++;
       $('score').textContent = state.score;
       btns[ci].classList.add('correct');
+      launchConfetti();
+      setTimeout(() => showBreedInfo(breed, advance), 200);
+      return;
     } else {
+      // 오답
       selectedBtn.classList.add('wrong');
       btns[ci].classList.add('correct');
     }
   } else {
+    // 타임오버
     btns[ci].classList.add('correct');
   }
 
-  setTimeout(advance, 1500);
+  setTimeout(advance, 1800);
 }
 
 // ── Advance ───────────────────────────────
@@ -225,6 +333,8 @@ function showEndScreen() {
 
 // ── Start / restart ───────────────────────
 function startQuiz() {
+  clearTimeout(infoAutoTimer);
+  hideBreedInfo();
   state.currentIndex = 0;
   state.score        = 0;
   state.answered     = false;
