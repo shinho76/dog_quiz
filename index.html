@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>강아지 퀴즈 🐾</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- 시작 화면 -->
+  <div id="screen-welcome" class="screen active">
+    <div class="welcome-content">
+      <div class="dog-hero">🐶</div>
+      <h1>강아지 퀴즈</h1>
+      <p class="subtitle">강아지 사진을 보고 품종을 맞춰보세요!</p>
+      <div class="info-badges">
+        <span class="badge">📋 총 10문제</span>
+        <span class="badge">⏱️ 문제당 15초</span>
+        <span class="badge">🐾 4지선다</span>
+      </div>
+      <button id="btn-start" class="btn-primary">시작하기 🐾</button>
+    </div>
+  </div>
+
+  <!-- 퀴즈 화면 -->
+  <div id="screen-quiz" class="screen">
+    <header class="quiz-header">
+      <div class="question-counter">
+        <span id="q-current">1</span> / <span id="q-total">10</span>
+      </div>
+      <div class="score-display">점수: <span id="score">0</span></div>
+    </header>
+
+    <div class="timer-bar-container">
+      <div id="timer-bar" class="timer-bar"></div>
+    </div>
+    <div class="timer-label"><span id="timer-count">15</span>초</div>
+
+    <div class="photo-container">
+      <div id="loading-spinner" class="spinner"></div>
+      <img id="dog-photo" src="" alt="강아지 사진">
+      <div id="photo-fallback" class="photo-fallback">🐕</div>
+    </div>
+
+    <p class="question-text">이 강아지의 품종은 무엇일까요?</p>
+
+    <div id="answer-grid" class="answer-grid">
+      <button class="btn-answer" data-index="0"></button>
+      <button class="btn-answer" data-index="1"></button>
+      <button class="btn-answer" data-index="2"></button>
+      <button class="btn-answer" data-index="3"></button>
+    </div>
+  </div>
+
+  <!-- 결과 화면 -->
+  <div id="screen-end" class="screen">
+    <div class="end-content">
+      <div class="end-grade-emoji" id="end-emoji">🏆</div>
+      <h2 id="end-title">강아지 마스터!</h2>
+      <p class="end-score">
+        <span id="end-score-val">10</span> / 10 점
+      </p>
+      <p id="end-message" class="end-message"></p>
+      <button id="btn-restart" class="btn-primary">다시 하기 🔄</button>
+    </div>
+  </div>
+
+  <script src="js/data.js"></script>
+  <script src="js/quiz.js"></script>
+</body>
+</html>
