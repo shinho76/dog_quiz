@@ -14,7 +14,6 @@ const state = {
   correctIndex:  -1,
 };
 
-// ── DOM refs ──────────────────────────────
 const screens = {
   welcome: document.getElementById('screen-welcome'),
   quiz:    document.getElementById('screen-quiz'),
@@ -44,29 +43,21 @@ function buildQuestions() {
   state.questions = shuffle(BREEDS).slice(0, TOTAL_QUESTIONS);
 }
 
-// ── Generate 4 choices for a question ─────
+// ── Generate 4 choices ────────────────────
 function generateChoices(correctBreed) {
-  const pool   = shuffle(BREEDS.filter(b => b !== correctBreed));
-  const wrong  = pool.slice(0, 3);
-  const all    = shuffle([correctBreed, ...wrong]);
-  return {
-    choices:      all,
-    correctIndex: all.indexOf(correctBreed),
-  };
+  const pool  = shuffle(BREEDS.filter(b => b !== correctBreed));
+  const all   = shuffle([correctBreed, ...pool.slice(0, 3)]);
+  return { choices: all, correctIndex: all.indexOf(correctBreed) };
 }
 
 // ── Timer ─────────────────────────────────
 function startTimer() {
   state.timeLeft = TIMER_SECONDS;
   renderTimer();
-
   state.timerInterval = setInterval(() => {
     state.timeLeft--;
     renderTimer();
-    if (state.timeLeft <= 0) {
-      stopTimer();
-      handleAnswer(null);
-    }
+    if (state.timeLeft <= 0) { stopTimer(); handleAnswer(null); }
   }, 1000);
 }
 
@@ -76,28 +67,30 @@ function stopTimer() {
 }
 
 function renderTimer() {
-  const pct     = (state.timeLeft / TIMER_SECONDS) * 100;
-  const bar     = $('timer-bar');
-  const label   = $('timer-count');
-  const wrapper = document.querySelector('.timer-label');
-
-  bar.style.width  = pct + '%';
-  label.textContent = state.timeLeft;
-
+  const pct = (state.timeLeft / TIMER_SECONDS) * 100;
+  $('timer-bar').style.width    = pct + '%';
+  $('timer-count').textContent  = state.timeLeft;
   const urgent = state.timeLeft <= 5;
-  bar.classList.toggle('urgent', urgent);
-  wrapper.classList.toggle('urgent', urgent);
+  $('timer-bar').classList.toggle('urgent', urgent);
+  document.querySelector('.timer-label').classList.toggle('urgent', urgent);
 }
 
-// ── Fetch dog image ───────────────────────
-function fetchDogImage(apiPath) {
-  const url = 'https://dog.ceo/api/breed/' + apiPath + '/images/random';
+// ── Image fetching ────────────────────────
+function fetchWikiImage(wikiTitle) {
+  const url = 'https://en.wikipedia.org/w/api.php?action=query&titles=' +
+    encodeURIComponent(wikiTitle) +
+    '&prop=pageimages&format=json&pithumbsize=800&origin=*';
+  return fetch(url)
+    .then(r => r.json())
+    .then(data => {
+      const page = Object.values(data.query.pages)[0];
+      if (!page.thumbnail) throw new Error('no image');
+      return page.thumbnail.source;
+    });
+}
 
-  const timeout = new Promise((_, reject) =>
-    setTimeout(() => reject(new Error('timeout')), 6000)
-  );
-
-  return Promise.race([fetch(url), timeout])
+function fetchDogCeoImage(apiPath) {
+  return fetch('https://dog.ceo/api/breed/' + apiPath + '/images/random')
     .then(r => r.json())
     .then(data => {
       if (data.status !== 'success') throw new Error('no image');
@@ -105,18 +98,23 @@ function fetchDogImage(apiPath) {
     });
 }
 
+function fetchImage(breed) {
+  const timeout = ms => new Promise((_, r) => setTimeout(() => r(new Error('timeout')), ms));
+  return Promise.race([fetchWikiImage(breed.wikiTitle), timeout(7000)])
+    .catch(() => fetchDogCeoImage(breed.apiPath));
+}
+
+// ── Photo display ─────────────────────────
 function showImage(src) {
-  const img      = $('dog-photo');
-  const spinner  = $('loading-spinner');
-  const fallback = $('photo-fallback');
+  const img     = $('dog-photo');
+  const spinner = $('loading-spinner');
 
   img.onload = () => {
     spinner.classList.add('hidden');
-    fallback.classList.remove('visible');
     img.classList.add('loaded');
     enableButtons();
   };
-  img.onerror = () => showFallback();
+  img.onerror = showFallback;
   img.src = src;
 }
 
@@ -128,27 +126,20 @@ function showFallback() {
 }
 
 function resetPhoto() {
-  const img      = $('dog-photo');
-  const spinner  = $('loading-spinner');
-  const fallback = $('photo-fallback');
-
+  const img = $('dog-photo');
   img.src = '';
   img.classList.remove('loaded');
-  spinner.classList.remove('hidden');
-  fallback.classList.remove('visible');
+  $('loading-spinner').classList.remove('hidden');
+  $('photo-fallback').classList.remove('visible');
 }
 
 // ── Buttons ───────────────────────────────
 function enableButtons() {
-  document.querySelectorAll('.btn-answer').forEach(b => {
-    b.disabled = false;
-  });
+  document.querySelectorAll('.btn-answer').forEach(b => { b.disabled = false; });
 }
 
 function disableButtons() {
-  document.querySelectorAll('.btn-answer').forEach(b => {
-    b.disabled = true;
-  });
+  document.querySelectorAll('.btn-answer').forEach(b => { b.disabled = true; });
 }
 
 // ── Load a question ───────────────────────
@@ -160,30 +151,20 @@ function loadQuestion(index) {
   state.choices      = choices;
   state.correctIndex = correctIndex;
 
-  // Header
   $('q-current').textContent = index + 1;
   $('q-total').textContent   = TOTAL_QUESTIONS;
   $('score').textContent     = state.score;
 
-  // Buttons: disable until image loads, clear old state
-  const btns = document.querySelectorAll('.btn-answer');
-  btns.forEach((btn, i) => {
-    btn.disabled = true;
-    btn.className  = 'btn-answer';
-    btn.innerHTML  = `<span class="kr">${choices[i].korean}</span><br><span class="en" style="font-size:0.75rem;font-weight:400;opacity:0.65">${choices[i].english}</span>`;
+  document.querySelectorAll('.btn-answer').forEach((btn, i) => {
+    btn.disabled  = true;
+    btn.className = 'btn-answer';
+    btn.innerHTML =
+      `<span>${choices[i].korean}</span><br>` +
+      `<span style="font-size:0.72rem;font-weight:400;opacity:0.6">${choices[i].english}</span>`;
   });
 
-  // Photo
   resetPhoto();
-
-  // Fetch image, retry once on failure
-  fetchDogImage(breed.apiPath)
-    .then(showImage)
-    .catch(() => fetchDogImage(breed.apiPath)
-      .then(showImage)
-      .catch(showFallback)
-    );
-
+  fetchImage(breed).then(showImage).catch(showFallback);
   startTimer();
 }
 
@@ -198,8 +179,8 @@ function handleAnswer(selectedBtn) {
   const ci   = state.correctIndex;
 
   if (selectedBtn !== null) {
-    const selectedIndex = parseInt(selectedBtn.dataset.index, 10);
-    if (selectedIndex === ci) {
+    const idx = parseInt(selectedBtn.dataset.index, 10);
+    if (idx === ci) {
       state.score++;
       $('score').textContent = state.score;
       btns[ci].classList.add('correct');
@@ -208,14 +189,13 @@ function handleAnswer(selectedBtn) {
       btns[ci].classList.add('correct');
     }
   } else {
-    // Timed out
     btns[ci].classList.add('correct');
   }
 
   setTimeout(advance, 1500);
 }
 
-// ── Advance to next question or end ───────
+// ── Advance ───────────────────────────────
 function advance() {
   state.currentIndex++;
   if (state.currentIndex < TOTAL_QUESTIONS) {
@@ -225,12 +205,12 @@ function advance() {
   }
 }
 
-// ── Grade system ──────────────────────────
+// ── Grade ─────────────────────────────────
 function getGrade(score) {
-  if (score === 10) return { emoji: '🏆', title: '강아지 마스터!',   msg: '완벽해요! 진짜 강아지 박사님이에요! 🎉' };
-  if (score >= 8)  return { emoji: '🦮', title: '강아지 전문가',     msg: '대단해요! 거의 다 맞혔어요! 👏' };
-  if (score >= 5)  return { emoji: '🐕', title: '강아지 팬',         msg: '잘했어요! 조금만 더 공부해봐요! 📚' };
-  return              { emoji: '🐾', title: '강아지 입문자',     msg: '괜찮아요! 다시 도전해봐요! 💪' };
+  if (score === 10) return { emoji: '🏆', title: '강아지 마스터!',  msg: '완벽해요! 진짜 강아지 박사님이에요! 🎉' };
+  if (score >= 8)  return { emoji: '🦮', title: '강아지 전문가',    msg: '대단해요! 거의 다 맞혔어요! 👏' };
+  if (score >= 5)  return { emoji: '🐕', title: '강아지 팬',        msg: '잘했어요! 조금만 더 공부해봐요! 📚' };
+  return              { emoji: '🐾', title: '강아지 입문자',    msg: '괜찮아요! 다시 도전해봐요! 💪' };
 }
 
 // ── End screen ────────────────────────────
@@ -249,7 +229,6 @@ function startQuiz() {
   state.score        = 0;
   state.answered     = false;
   stopTimer();
-
   buildQuestions();
   showScreen('quiz');
   loadQuestion(0);
@@ -259,8 +238,7 @@ function startQuiz() {
 function initApp() {
   $('btn-start').addEventListener('click', startQuiz);
   $('btn-restart').addEventListener('click', startQuiz);
-
-  document.getElementById('answer-grid').addEventListener('click', e => {
+  $('answer-grid').addEventListener('click', e => {
     const btn = e.target.closest('.btn-answer');
     if (btn && !btn.disabled) handleAnswer(btn);
   });

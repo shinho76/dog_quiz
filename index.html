@@ -27,31 +27,35 @@
 
   <!-- 퀴즈 화면 -->
   <div id="screen-quiz" class="screen">
-    <header class="quiz-header">
-      <div class="question-counter">
-        <span id="q-current">1</span> / <span id="q-total">10</span>
+    <div class="quiz-container">
+
+      <header class="quiz-header">
+        <div class="question-counter">
+          <span id="q-current">1</span> / <span id="q-total">10</span>
+        </div>
+        <div class="score-display">점수: <span id="score">0</span></div>
+      </header>
+
+      <div class="timer-bar-container">
+        <div id="timer-bar" class="timer-bar"></div>
       </div>
-      <div class="score-display">점수: <span id="score">0</span></div>
-    </header>
+      <div class="timer-label"><span id="timer-count">15</span>초</div>
 
-    <div class="timer-bar-container">
-      <div id="timer-bar" class="timer-bar"></div>
-    </div>
-    <div class="timer-label"><span id="timer-count">15</span>초</div>
+      <div class="photo-container">
+        <div id="loading-spinner" class="spinner"></div>
+        <img id="dog-photo" src="" alt="강아지 사진">
+        <div id="photo-fallback" class="photo-error">사진을 불러올 수 없어요</div>
+      </div>
 
-    <div class="photo-container">
-      <div id="loading-spinner" class="spinner"></div>
-      <img id="dog-photo" src="" alt="강아지 사진">
-      <div id="photo-fallback" class="photo-fallback">🐕</div>
-    </div>
+      <p class="question-text">이 강아지의 품종은 무엇일까요?</p>
 
-    <p class="question-text">이 강아지의 품종은 무엇일까요?</p>
+      <div id="answer-grid" class="answer-grid">
+        <button class="btn-answer" data-index="0"></button>
+        <button class="btn-answer" data-index="1"></button>
+        <button class="btn-answer" data-index="2"></button>
+        <button class="btn-answer" data-index="3"></button>
+      </div>
 
-    <div id="answer-grid" class="answer-grid">
-      <button class="btn-answer" data-index="0"></button>
-      <button class="btn-answer" data-index="1"></button>
-      <button class="btn-answer" data-index="2"></button>
-      <button class="btn-answer" data-index="3"></button>
     </div>
   </div>
 
