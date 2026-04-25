@@ -2,7 +2,7 @@
 
 const TOTAL_QUESTIONS = 10;
 const TIMER_SECONDS   = 15;
-const MAX_SCORE       = TOTAL_QUESTIONS * 2; // 글자만 맞추면 2점 × 10문제 = 20점
+const MAX_SCORE       = TOTAL_QUESTIONS * 10; // 글자만 맞추면 10점 × 10문제 = 100점
 
 const state = {
   questions:     [],
@@ -79,8 +79,8 @@ function renderTimer() {
 
 // ── 음향 ─────────────────────────────────
 const sfx = {
-  bark:  new Audio('audio/bark.wav'),
-  growl: new Audio('audio/growl.wav'),
+  bark:  new Audio('audio/bark.mp3'),
+  growl: new Audio('audio/growl.mp3'),
 };
 sfx.bark.volume  = 0.85;
 sfx.growl.volume = 0.80;
@@ -293,7 +293,7 @@ function handleAnswer(selectedBtn) {
 
     if (idx === ci) {
       // ── 정답 ──────────────────────────────
-      const points = wasFlipped ? 1 : 2; // 글자만 = 2점, 사진 봄 = 1점
+      const points = wasFlipped ? 5 : 10; // 글자만 = 10점, 사진 봄 = 5점
       state.score += points;
       $('score').textContent = state.score;
       btns[ci].classList.add('correct');
@@ -327,12 +327,12 @@ function advance() {
   }
 }
 
-// ── Grade (최대 20점 기준) ─────────────────
+// ── Grade (최대 100점 기준) ────────────────
 function getGrade(score) {
-  if (score >= 20) return { emoji: '🏆', title: '강아지 마스터!',  msg: '만점! 진짜 강아지 박사님이에요! 🎉' };
-  if (score >= 15) return { emoji: '🦮', title: '강아지 전문가',    msg: '대단해요! 거의 다 맞혔어요! 👏' };
-  if (score >= 8)  return { emoji: '🐕', title: '강아지 팬',        msg: '잘했어요! 조금만 더 공부해봐요! 📚' };
-  return              { emoji: '🐾', title: '강아지 입문자',    msg: '괜찮아요! 다시 도전해봐요! 💪' };
+  if (score >= 100) return { emoji: '🏆', title: '강아지 마스터!', msg: '만점! 진짜 강아지 박사님이에요! 🎉' };
+  if (score >= 75)  return { emoji: '🦮', title: '강아지 전문가',   msg: '대단해요! 거의 다 맞혔어요! 👏' };
+  if (score >= 40)  return { emoji: '🐕', title: '강아지 팬',       msg: '잘했어요! 조금만 더 공부해봐요! 📚' };
+  return               { emoji: '🐾', title: '강아지 입문자',   msg: '괜찮아요! 다시 도전해봐요! 💪' };
 }
 
 // ── End screen ────────────────────────────
