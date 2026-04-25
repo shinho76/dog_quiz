@@ -37,7 +37,7 @@ const BREEDS = [
   {
     korean: '로트와일러', english: 'Rottweiler',
     apiPath: 'rottweiler', wikiTitle: 'Rottweiler',
-    description: '자신감 있고 용감한 수호견이에요! 충성스럽고 보호 본능이 강하지만, 잘 훈련된 로트와일러는 아이들을 지키는 든든한 친구예요. 💪',
+    description: '자신감 있고 용감한 수호견이에요! 충성스럽고 보호 본능이 강하지만, 잘 훈련되면 아이들을 지키는 든든한 친구예요. 💪',
   },
   {
     korean: '닥스훈트', english: 'Dachshund',
@@ -97,7 +97,7 @@ const BREEDS = [
   {
     korean: '셔틀랜드 십독', english: 'Shetland Sheepdog',
     apiPath: 'sheepdog/shetland', wikiTitle: 'Shetland Sheepdog',
-    description: '스코틀랜드에서 양을 몰던 영리한 목양견! 훈련 능력이 뛰어나 대회에서 자주 우승해요. 콜리의 미니 버전처럼 생겼어요. 🏅',
+    description: '스코틀랜드에서 양을 몰던 영리한 목양견! 훈련 능력이 뛰어나 대회에서 자주 우승해요. 유명한 목양견의 소형 버전처럼 귀엽게 생겼어요. 🏅',
   },
   {
     korean: '보더 콜리', english: 'Border Collie',
