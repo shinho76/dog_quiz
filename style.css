@@ -190,6 +190,12 @@ h1 {
   font-weight: 900;
 }
 
+.score-max {
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--color-text-light);
+}
+
 /* ── Timer Bar ───────────────────────────── */
 .timer-bar-container {
   width: calc(100% - 2.5rem);
@@ -224,7 +230,7 @@ h1 {
 /* ── Flip Card ───────────────────────────── */
 .flip-card {
   width: calc(100% - 2.5rem);
-  height: clamp(155px, 40vh, 275px);
+  height: clamp(165px, 42vh, 285px);
   margin: 0 1.25rem 0.7rem;
   perspective: 1000px;
   cursor: pointer;
@@ -286,12 +292,14 @@ h1 {
 }
 
 .clue-content {
-  font-size: 0.88rem;
-  line-height: 1.7;
+  font-size: 0.96rem;
+  line-height: 1.65;
   color: var(--color-text);
   text-align: center;
   word-break: keep-all;
   font-weight: 500;
+  overflow-y: auto;
+  max-height: 100%;
 }
 
 .tap-hint {
@@ -581,13 +589,20 @@ h1 {
 @media (orientation: landscape) and (max-height: 520px) {
   .quiz-container  { padding: 0.2rem 0 0.4rem; }
   .quiz-header     { padding: 0.25rem 1.25rem 0.15rem; }
-  .timer-label     { margin-bottom: 0.25rem; }
-  .flip-card       { height: clamp(100px, 28vh, 140px); }
-  .question-text   { font-size: 0.85rem; margin-bottom: 0.35rem; }
+  .timer-label     { margin-bottom: 0.2rem; }
+  .flip-card       { height: clamp(105px, 30vh, 148px); margin-bottom: 0.4rem; }
+  .clue-content    { font-size: 0.82rem; line-height: 1.5; }
+  .clue-icon       { font-size: 1.2rem; margin-bottom: 0.25rem; }
+  .question-text   { font-size: 0.85rem; margin-bottom: 0.3rem; }
   .answer-grid     { gap: 7px; }
-  .btn-answer      { min-height: 50px; padding: 0.5rem; font-size: 0.8rem; }
+  .btn-answer      { min-height: 48px; padding: 0.45rem; font-size: 0.8rem; }
 }
 
-@media (max-width: 360px) {
-  .btn-answer { font-size: 0.78rem; min-height: 58px; }
+/* ── Responsive: 소형 화면 (≤380px) ─────── */
+@media (max-width: 380px) {
+  .clue-content  { font-size: 0.88rem; }
+  .btn-answer    { font-size: 0.8rem; min-height: 60px; }
+  .quiz-header   { padding: 0.5rem 1rem 0.3rem; }
+  .answer-grid   { padding: 0 1rem; }
+  .timer-bar-container { width: calc(100% - 2rem); margin: 0 1rem 0.2rem; }
 }

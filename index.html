@@ -37,7 +37,7 @@
         <div class="question-counter">
           <span id="q-current">1</span> / <span id="q-total">10</span>
         </div>
-        <div class="score-display">점수: <span id="score">0</span></div>
+        <div class="score-display">점수: <span id="score">0</span><span class="score-max"> / 100</span></div>
       </header>
 
       <div class="timer-bar-container">
@@ -51,10 +51,10 @@
 
           <!-- 앞면: 텍스트 힌트 -->
           <div class="flip-card-front">
-            <span class="front-score-badge">🏅 글자만 맞추면 2점!</span>
+            <span class="front-score-badge">🏅 글자만 맞추면 10점!</span>
             <p class="clue-icon">🔍</p>
             <p id="clue-content" class="clue-content"></p>
-            <span class="tap-hint">👆 탭하면 사진 확인 (1점)</span>
+            <span class="tap-hint">👆 탭하면 사진 확인 (5점)</span>
           </div>
 
           <!-- 뒷면: 사진 -->
@@ -62,7 +62,7 @@
             <div id="loading-spinner" class="spinner"></div>
             <img id="dog-photo" src="" alt="강아지 사진">
             <div id="photo-fallback" class="photo-error">사진을 불러올 수 없어요</div>
-            <span class="back-score-badge">📸 1점</span>
+            <span class="back-score-badge">📸 5점</span>
           </div>
 
         </div>
