@@ -78,35 +78,21 @@ function renderTimer() {
 }
 
 // ── 음향 ─────────────────────────────────
-const sfx = { bark: null, growl: null };
-
-function loadSounds() {
-  const bark  = new Audio('audio/bark.wav');
-  const growl = new Audio('audio/growl.wav');
-  bark.volume  = 0.85;
-  growl.volume = 0.80;
-  bark.load();
-  growl.load();
-  bark.addEventListener('canplaythrough',  () => { sfx.bark  = bark;  }, { once: true });
-  growl.addEventListener('canplaythrough', () => { sfx.growl = growl; }, { once: true });
-}
+const sfx = {
+  bark:  new Audio('audio/bark.wav'),
+  growl: new Audio('audio/growl.wav'),
+};
+sfx.bark.volume  = 0.85;
+sfx.growl.volume = 0.80;
+sfx.bark.load();
+sfx.growl.load();
 
 function playCorrect() {
-  try {
-    if (sfx.bark) {
-      sfx.bark.currentTime = 0;
-      sfx.bark.play().catch(() => {});
-    }
-  } catch (_) {}
+  try { sfx.bark.currentTime = 0;  sfx.bark.play().catch(() => {}); } catch (_) {}
 }
 
 function playWrong() {
-  try {
-    if (sfx.growl) {
-      sfx.growl.currentTime = 0;
-      sfx.growl.play().catch(() => {});
-    }
-  } catch (_) {}
+  try { sfx.growl.currentTime = 0; sfx.growl.play().catch(() => {}); } catch (_) {}
 }
 
 // ── 폭죽 confetti ─────────────────────────
@@ -374,7 +360,6 @@ function startQuiz() {
 
 // ── Init ──────────────────────────────────
 function initApp() {
-  loadSounds();
   $('btn-start').addEventListener('click', startQuiz);
   $('btn-restart').addEventListener('click', startQuiz);
 
