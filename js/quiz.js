@@ -77,78 +77,35 @@ function renderTimer() {
   label.classList.toggle('urgent', urgent);
 }
 
-// ── Web Audio 음향 ────────────────────────
-let audioCtx = null;
+// ── 음향 ─────────────────────────────────
+const sfx = { bark: null, growl: null };
 
-function getAudio() {
-  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  if (audioCtx.state === 'suspended') audioCtx.resume();
-  return audioCtx;
-}
-
-function oneBark(ctx, t) {
-  const osc    = ctx.createOscillator();
-  const filter = ctx.createBiquadFilter();
-  const gain   = ctx.createGain();
-
-  const nBuf  = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.18), ctx.sampleRate);
-  const nData = nBuf.getChannelData(0);
-  for (let i = 0; i < nData.length; i++) nData[i] = Math.random() * 2 - 1;
-  const noise     = ctx.createBufferSource();
-  noise.buffer    = nBuf;
-  const noiseGain = ctx.createGain();
-  noiseGain.gain.setValueAtTime(0.18, t);
-  noiseGain.gain.exponentialRampToValueAtTime(0.001, t + 0.16);
-
-  osc.type = 'sawtooth';
-  osc.frequency.setValueAtTime(680, t);
-  osc.frequency.exponentialRampToValueAtTime(210, t + 0.14);
-
-  filter.type = 'bandpass';
-  filter.frequency.setValueAtTime(700, t);
-  filter.frequency.exponentialRampToValueAtTime(280, t + 0.14);
-  filter.Q.setValueAtTime(2.5, t);
-
-  gain.gain.setValueAtTime(0.55, t);
-  gain.gain.exponentialRampToValueAtTime(0.001, t + 0.17);
-
-  osc.connect(filter); noise.connect(noiseGain);
-  filter.connect(gain); noiseGain.connect(gain);
-  gain.connect(ctx.destination);
-
-  osc.start(t); osc.stop(t + 0.2);
-  noise.start(t); noise.stop(t + 0.2);
+function loadSounds() {
+  const bark  = new Audio('audio/bark.wav');
+  const growl = new Audio('audio/growl.wav');
+  bark.volume  = 0.85;
+  growl.volume = 0.80;
+  bark.load();
+  growl.load();
+  bark.addEventListener('canplaythrough',  () => { sfx.bark  = bark;  }, { once: true });
+  growl.addEventListener('canplaythrough', () => { sfx.growl = growl; }, { once: true });
 }
 
 function playCorrect() {
   try {
-    const ctx = getAudio();
-    const t   = ctx.currentTime;
-    oneBark(ctx, t);
-    oneBark(ctx, t + 0.26);
+    if (sfx.bark) {
+      sfx.bark.currentTime = 0;
+      sfx.bark.play().catch(() => {});
+    }
   } catch (_) {}
 }
 
 function playWrong() {
   try {
-    const ctx = getAudio(); const t = ctx.currentTime; const dur = 0.85;
-    const carrier = ctx.createOscillator(); carrier.type = 'sawtooth';
-    carrier.frequency.setValueAtTime(95, t);
-    carrier.frequency.linearRampToValueAtTime(72, t + dur);
-    const lfo = ctx.createOscillator(); lfo.type = 'sine';
-    lfo.frequency.setValueAtTime(22, t);
-    const lfoGain = ctx.createGain(); lfoGain.gain.setValueAtTime(0.18, t);
-    const filter = ctx.createBiquadFilter(); filter.type = 'lowpass';
-    filter.frequency.setValueAtTime(280, t);
-    const out = ctx.createGain();
-    out.gain.setValueAtTime(0, t);
-    out.gain.linearRampToValueAtTime(0.40, t + 0.08);
-    out.gain.setValueAtTime(0.40, t + dur - 0.18);
-    out.gain.exponentialRampToValueAtTime(0.001, t + dur);
-    lfo.connect(lfoGain); lfoGain.connect(out.gain);
-    carrier.connect(filter); filter.connect(out); out.connect(ctx.destination);
-    carrier.start(t); carrier.stop(t + dur + 0.05);
-    lfo.start(t); lfo.stop(t + dur + 0.05);
+    if (sfx.growl) {
+      sfx.growl.currentTime = 0;
+      sfx.growl.play().catch(() => {});
+    }
   } catch (_) {}
 }
 
@@ -417,6 +374,7 @@ function startQuiz() {
 
 // ── Init ──────────────────────────────────
 function initApp() {
+  loadSounds();
   $('btn-start').addEventListener('click', startQuiz);
   $('btn-restart').addEventListener('click', startQuiz);
 
